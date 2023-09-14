@@ -44,9 +44,3 @@ for a in np.arange(-2.2, 0.7, 0.001):
 
 plt.scatter(Re, Im, c = cols , s = 1)
 plt.savefig('plot4.png', dpi=1000, bbox_inches='tight')
-
-## For tomorrow to work on:
-# Better plotting system (is able to zoom, function that remaps iterations to 0-255 scale
-# detail the graph with legend and labels
-# create possiblity of julia sets
-# zooming in alot?

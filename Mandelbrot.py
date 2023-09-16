@@ -1,46 +1,48 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image, ImageDraw
 
-class Complex:
-    def __init__(self, a, b):
-        self.re = a
-        self.im = b
-
-    def get_re(self):
-        return self.re
-
-    def get_im(self):
-        return self.im
 
 
 # f(z) -> z**2 + c and we want to change c
-# Goal is to optimize this such that is quick
-def convergence_check(c, number = 0, iterations = 0):
 
-# This does not converge so will return a colour other than black
-    if number.__abs__() > 2:
-        return [iterations*5]
-# This does converge so will return black
-    if iterations == 50: # for now iterations = 50 and iterations *5 produces a nice result
-        return [0]  # too many iterations i dont think is useful and does not produce such good colours
+def convergence_check(c):
 
-    result = number**2 + c
-    iterations += 1
+    z = 0
+    iterations = 0
 
-    return convergence_check(c, result, iterations)
+    while z.__abs__() < 2 and iterations < 80:
+        z = z*z + c
+        iterations += 1
 
-# Generate a bunch of numbers
+    return iterations
 
-Re = []
-Im = []
-cols = []
 
-for a in np.arange(-2.2, 0.7, 0.001):
-    for b in np.arange(-1.5, 1.5, 0.001):
-        obj = Complex(a, b)
-        cols.append(convergence_check((obj.re + obj.im * 1j)))
-        Re.append(a)
-        Im.append(b)
 
-plt.scatter(Re, Im, c = cols , s = 1)
-plt.savefig('plot4.png', dpi=1000, bbox_inches='tight')
+Width = 300
+Height = 300
+
+# Decides which part of the mandelbrot set to focus on
+x_range = (-2.2,0.7) # To view the entire fractal use (-2.2,0.7)
+y_range = (-1.5, 1.5)   # To vire the entire fractal use (-1.5, 1.5)
+
+
+im = Image.new('HSV', (Width, Height), (0, 0, 0))
+draw = ImageDraw.Draw(im)
+
+for x in range(Width):
+    for y in range(Height):
+        c = complex( x_range[0] + (x/Width)*( x_range[1] - x_range[0]),
+                     y_range[0] + (y / Height) * (y_range[1] - y_range[0]) )
+        m = convergence_check(c)
+        # The color depends on the number of iterations
+        hue = int(255 * m / 80)
+        saturation = 255
+        value = 255 if m < 80 else 0
+        # Plot the point
+        draw.point([x, y], (hue, saturation, value))
+
+draw.text((0, 20) , 'Hello', fill = (0,0,0) )
+
+im.convert('RGB').save('plot4.png', 'PNG')
+

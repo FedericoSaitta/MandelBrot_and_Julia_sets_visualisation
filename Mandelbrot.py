@@ -1,48 +1,53 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image, ImageDraw
 
+convergence_radius = 2
+power = 2
+max_iter = 80
 
+# Setting which part of the graph to focus on
+x_vals = (-2 , 2)
+y_vals = (-1, 1)
 
-# f(z) -> z**2 + c and we want to change c
+# Resolution of the image
+Width = 4000
+Height = 4000
 
-def convergence_check(c):
+colormap = 'viridis_r'
 
+def mandelbrot(c):
     z = 0
     iterations = 0
-
-    while z.__abs__() < 2 and iterations < 80:
-        z = z*z + c
+    while z.__abs__() < convergence_radius and iterations < max_iter:
+        z = z**power + c
         iterations += 1
+    return iterations
 
+def julia(z, c = -0.7 - 0.3*1j):
+    num = z
+    iterations = 0
+    while num.__abs__() < convergence_radius  and iterations < max_iter:
+        num = num ** power + c
+        iterations += 1
     return iterations
 
 
+x_range , y_range = np.linspace(x_vals[0], x_vals[1], Width), np.linspace(y_vals[0], y_vals[1], Height)
+iteration_array  = []
 
-Width = 300
-Height = 300
+for y in y_range:
+    row = []
+    for x in x_range:
+        c = complex(x + 1j * y)
+        row.append(mandelbrot(c)) # Choose whether you want to plot Julia or Mandelbrot sets
 
-# Decides which part of the mandelbrot set to focus on
-x_range = (-2.2,0.7) # To view the entire fractal use (-2.2,0.7)
-y_range = (-1.5, 1.5)   # To vire the entire fractal use (-1.5, 1.5)
+    iteration_array.append(row)
 
-
-im = Image.new('HSV', (Width, Height), (0, 0, 0))
-draw = ImageDraw.Draw(im)
-
-for x in range(Width):
-    for y in range(Height):
-        c = complex( x_range[0] + (x/Width)*( x_range[1] - x_range[0]),
-                     y_range[0] + (y / Height) * (y_range[1] - y_range[0]) )
-        m = convergence_check(c)
-        # The color depends on the number of iterations
-        hue = int(255 * m / 80)
-        saturation = 255
-        value = 255 if m < 80 else 0
-        # Plot the point
-        draw.point([x, y], (hue, saturation, value))
-
-draw.text((0, 20) , 'Hello', fill = (0,0,0) )
-
-im.convert('RGB').save('plot4.png', 'PNG')
-
+ax = plt.axes()
+ax.set_aspect('equal')
+graph = ax.pcolormesh(x_range, y_range, iteration_array, cmap = colormap)
+plt.colorbar(graph)
+plt.xlabel("Real-Axis")
+plt.ylabel("Imaginary-Axis")
+plt.title('Multibrot set for $z_{{new}} = z^{{{}}} + c$'.format(power))
+plt.savefig("MandelBrot4k_80iters", dpi = 4000)

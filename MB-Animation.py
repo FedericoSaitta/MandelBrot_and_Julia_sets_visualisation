@@ -1,62 +1,90 @@
-import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
+from numba import jit
 from matplotlib.animation import FuncAnimation
+import matplotlib.pyplot as plt
+
+RES = 500
 
 
-convergence_radius = 2
-power = 2
-max_iter = 80
+@jit
+def make_mandelbrot(x_range, y_range):
+    max_iterations = 50
+    result = np.zeros((RES, RES))
+    # for each pixel at (ix, iy)
+    j = 0
+    for iy in y_range:
+        i = 0
 
-# Setting which part of the graph to focus on
-x_vals = (-2.5, 1)
-y_vals = (-1.5, 1.5)
+        for ix in x_range:
+            x0 = ix
+            y0 = iy
 
-# Number of data points, total it n x n
-data_points = 10
+            x = 0.0
+            y = 0.0
+            # perform Mandelbrot set iterations
+            for iteration in range(max_iterations):
+                x_new = x*x - y*y + x0
+                y = 2*x*y + y0
+                x = x_new
 
-colormap = 'viridis_r'
+                # if escaped
+                if x*x + y*y > 4.0:
+                    # color using pretty linear gradient
+                    color = 1.0 - 0.01 * \
+                        (iteration - np.log2(np.log2(x*x + y*y)))
+                    break
+            else:
+                # failed, set color to black
+                color = 0.0
 
+            result[j, i] = color
+            i += 1
+        j += 1
 
-def mandelbrot(c):
-    z = 0
-    iterations = 0
-    while z.__abs__() < convergence_radius and iterations < max_iter:
-        z = z**power + c
-        iterations += 1
-    return iterations
+    return result
 
 
 fig = plt.figure()
-ax = plt.axes()
 
-x_range = np.linspace(x_vals[0], x_vals[1], data_points)
-y_range = np.linspace(y_vals[0], y_vals[1], data_points)
-
-
-iteration_array = []
-for depth in range(10):  # Note the size of the depth should match the frames
-    width = []
-    for y in y_range:
-        row = []
-        for x in x_range:
-            c = complex(x + 1j * y)
-            # Choose whether you want to plot Julia or Mandelbrot sets
-            row.append(mandelbrot(c))
-        width.append(row)
-    iteration_array.append(width)
+x_vals = (-2.2, 1)
+y_vals = (-1.1, 1.1)
 
 
-iteration_array = np.array(iteration_array)
+frame_num = 200
 
-cax = ax.pcolormesh(
-    x_range, y_range, iteration_array[:-1, :-1, 0], cmap=colormap)
-fig.colorbar(cax)
+zoom_coords = (1.75, 0)
+
+up_increment_x = np.abs((x_vals[0] - zoom_coords[0]) / frame_num)
+up_increment_y = np.abs((y_vals[0] - zoom_coords[1]) / frame_num)
+
+down_increment_x = np.abs((x_vals[1] - zoom_coords[0]) / frame_num)
+down_increment_y = np.abs((y_vals[1] - zoom_coords[1]) / frame_num)
+
+colour = []
+
+for frame in range(frame_num):
+    r = x_vals[0] + up_increment_x * frame
+    l = x_vals[1] - down_increment_x * frame
+    t = y_vals[0] + up_increment_y * frame
+    b = y_vals[1] - down_increment_y * frame
+
+    x_range = np.linspace(l, r, RES)
+    y_range = np.linspace(b, t, RES)
+
+    colour.append(make_mandelbrot(x_range, y_range))
+
+
+colour = np.array(colour)
+cax = plt.pcolormesh(
+    x_range, y_range, colour[0, :, :], cmap='hsv_r')
 
 
 def animate(i):
-    cax.set_array(iteration_array[:-1, :-1, i].flatten())
+    cax.set_array(colour[i, :, :].flatten())
 
 
-anim = FuncAnimation(fig, animate, frames=10, interval=20)
-anim.save('continuousSineWave.mp4',
-          writer='ffmpeg', fps=30)
+anim = FuncAnimation(fig, animate, frames=frame_num, interval=20)
+anim.save('MandelBrot_Zoom.mp4',
+          writer='ffmpeg', fps=20)
+print('Animation has been saved')
